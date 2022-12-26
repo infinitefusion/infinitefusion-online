@@ -46,16 +46,17 @@ public class WondertradeManager {
         try {
             addNewEntryToTable(sentPokemon);
             PokemonDto receivedPokemon = obtainNewPokemon(sentPokemon.getPlayerId(),sentPokemon.getNbBadges());
+            deleteReceivedPokemonFromDB(receivedPokemon.getTradeId());
             if(receivedPokemon == null){
                 //could not find a trade partner
                 response.setStatus(HttpServletResponse.SC_FOUND);
             }
             else {
-
                 JsonObject jsonResponse = new JsonObject();
                 jsonResponse.addProperty("trainer_name",receivedPokemon.getTrainerName());
                 jsonResponse.addProperty("trainer_id",receivedPokemon.getPlayerId());
                 jsonResponse.addProperty("original_trainer_name",receivedPokemon.getOriginalTrainerName());
+                jsonResponse.addProperty("original_trainer_id",receivedPokemon.getOriginalTrainerId());
                 jsonResponse.addProperty("pokemon_species",receivedPokemon.getPokemonSpecies());
                 jsonResponse.addProperty("level",receivedPokemon.getPokemonLevel());
                 jsonResponse.addProperty("nickname",receivedPokemon.getPokemonNickname());
@@ -67,6 +68,19 @@ public class WondertradeManager {
         } catch (SQLException | IOException throwables) {
             throwables.printStackTrace();
         }
+    }
+
+    private void deleteReceivedPokemonFromDB(String tradeId) {
+        String sqlQuery = "DELETE FROM infinitefusion.wondertrade WHERE TradeID = ?";
+        try {
+            PreparedStatement statement = connection.prepareStatement(sqlQuery);
+            statement.setString(1,tradeId);
+            statement.executeUpdate();
+            statement.close();
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+        }
+
     }
 
     private PokemonDto obtainNewPokemon(String playerId, int nbBadges) {
