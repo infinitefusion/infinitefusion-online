@@ -40,27 +40,17 @@ public class WondertradeManager {
 
     public void handleWondertradeRequest(Request request, HttpServletResponse response) {
         JSONObject body = parseRequestBody(request);
+
         PokemonDto sentPokemon = parsePokemonInfoFromJson(body);
-
-
         try {
             addNewEntryToTable(sentPokemon);
-            PokemonDto receivedPokemon = obtainNewPokemon(sentPokemon.getPlayerId(),sentPokemon.getNbBadges());
-            deleteReceivedPokemonFromDB(receivedPokemon.getTradeId());
-            if(receivedPokemon == null){
+            PokemonDto receivedPokemon = obtainNewPokemon(sentPokemon.getPlayerId(), sentPokemon.getNbBadges());
+            if (receivedPokemon == null) {
                 //could not find a trade partner
                 response.setStatus(HttpServletResponse.SC_FOUND);
-            }
-            else {
-                JsonObject jsonResponse = new JsonObject();
-                jsonResponse.addProperty("trainer_name",receivedPokemon.getTrainerName());
-                jsonResponse.addProperty("trainer_id",receivedPokemon.getPlayerId());
-                jsonResponse.addProperty("original_trainer_name",receivedPokemon.getOriginalTrainerName());
-                jsonResponse.addProperty("original_trainer_id",receivedPokemon.getOriginalTrainerId());
-                jsonResponse.addProperty("pokemon_species",receivedPokemon.getPokemonSpecies());
-                jsonResponse.addProperty("level",receivedPokemon.getPokemonLevel());
-                jsonResponse.addProperty("nickname",receivedPokemon.getPokemonNickname());
-                jsonResponse.addProperty("trainer_gender",receivedPokemon.getTrainerGender());
+            } else {
+                deleteReceivedPokemonFromDB(receivedPokemon.getTradeId());
+                JsonObject jsonResponse = buildJsonResponse(receivedPokemon);
                 response.setContentType("application/json");
                 response.getWriter().print(jsonResponse.toString());
             }
@@ -70,11 +60,28 @@ public class WondertradeManager {
         }
     }
 
+    private JsonObject buildJsonResponse(PokemonDto receivedPokemon) {
+        JsonObject jsonResponse = new JsonObject();
+        jsonResponse.addProperty("trainer_name", receivedPokemon.getTrainerName());
+        jsonResponse.addProperty("trainer_id", receivedPokemon.getPlayerId());
+        jsonResponse.addProperty("original_trainer_name", receivedPokemon.getOriginalTrainerName());
+        jsonResponse.addProperty("original_trainer_id", receivedPokemon.getOriginalTrainerId());
+        jsonResponse.addProperty("pokemon_species", receivedPokemon.getPokemonSpecies());
+        jsonResponse.addProperty("level", receivedPokemon.getPokemonLevel());
+        jsonResponse.addProperty("nickname", receivedPokemon.getPokemonNickname());
+        jsonResponse.addProperty("trainer_gender", receivedPokemon.getTrainerGender());
+        jsonResponse.addProperty("head_shiny", receivedPokemon.isHeadShiny());
+        jsonResponse.addProperty("body_shiny", receivedPokemon.isBodyShiny());
+        jsonResponse.addProperty("debug_shiny", receivedPokemon.isDebugShiny());
+        return jsonResponse;
+    }
+
+
     private void deleteReceivedPokemonFromDB(String tradeId) {
         String sqlQuery = "DELETE FROM infinitefusion.wondertrade WHERE TradeID = ?";
         try {
             PreparedStatement statement = connection.prepareStatement(sqlQuery);
-            statement.setString(1,tradeId);
+            statement.setString(1, tradeId);
             statement.executeUpdate();
             statement.close();
         } catch (SQLException throwables) {
@@ -104,7 +111,9 @@ public class WondertradeManager {
                 pokemonDto.setPokemonLevel(resultSet.getInt("PokemonLevel"));
                 pokemonDto.setTradeDate(resultSet.getTimestamp("TradeDate"));
                 pokemonDto.setTrainerGender(resultSet.getInt("TrainerGender"));
-
+                pokemonDto.setHeadShiny(resultSet.getBoolean("HeadShiny"));
+                pokemonDto.setHeadShiny(resultSet.getBoolean("BodyShiny"));
+                pokemonDto.setHeadShiny(resultSet.getBoolean("DebugShiny"));
                 return pokemonDto;
             }
 
@@ -124,11 +133,15 @@ public class WondertradeManager {
         pokemonDto.setPokemonLevel(body.getInt("level"));
         pokemonDto.setNbBadges(body.getInt("nb_badges"));
         pokemonDto.setTrainerGender(body.getInt("trainer_gender"));
+        pokemonDto.setHeadShiny(body.getBoolean("head_shiny"));
+        pokemonDto.setBodyShiny(body.getBoolean("body_shiny"));
+        pokemonDto.setDebugShiny(body.getBoolean("debug_shiny"));
+
         return pokemonDto;
     }
 
     private void addNewEntryToTable(PokemonDto pokemonDto) throws SQLException {
-        String SQL_QUERY = "INSERT INTO infinitefusion.wondertrade(tradeID,PlayerId,TrainerName,TrainerGender,OriginalTrainerName,OriginalTrainerId,PokemonSpecies,PokemonNickname,NbBadges, PokemonLevel, TradeDate) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        String SQL_QUERY = "INSERT INTO infinitefusion.wondertrade(tradeID,PlayerId,TrainerName,TrainerGender,OriginalTrainerName,OriginalTrainerId,PokemonSpecies,PokemonNickname,NbBadges, PokemonLevel, TradeDate, BodyShiny, HeadShiny, DebugShiny) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         PreparedStatement statement = connection.prepareStatement(SQL_QUERY);
         String tradeId = UUID.randomUUID().toString();
         statement.setString(1, tradeId);
@@ -142,8 +155,11 @@ public class WondertradeManager {
         statement.setInt(9, pokemonDto.getNbBadges());
         statement.setInt(10, pokemonDto.getPokemonLevel());
         statement.setTimestamp(11, new Timestamp(System.currentTimeMillis()));
+        statement.setBoolean(12, pokemonDto.isBodyShiny());
+        statement.setBoolean(13, pokemonDto.isHeadShiny());
+        statement.setBoolean(14, pokemonDto.isDebugShiny());
 
-        int rowsInserted = statement.executeUpdate();
+        statement.executeUpdate();
         statement.close();
     }
 

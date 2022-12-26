@@ -14,6 +14,9 @@ public class PokemonDto {
     private int pokemonLevel;
     private Timestamp tradeDate;
     private int trainerGender;
+    private boolean headShiny;
+    private boolean bodyShiny;
+    private boolean debugShiny;
 
     public String getTradeId() {
         return tradeId;
@@ -101,5 +104,29 @@ public class PokemonDto {
 
     public void setOriginalTrainerId(String originalTrainerId) {
         this.originalTrainerId = originalTrainerId;
+    }
+
+    public boolean isHeadShiny() {
+        return headShiny;
+    }
+
+    public void setHeadShiny(boolean headShiny) {
+        this.headShiny = headShiny;
+    }
+
+    public boolean isBodyShiny() {
+        return bodyShiny;
+    }
+
+    public void setBodyShiny(boolean bodyShiny) {
+        this.bodyShiny = bodyShiny;
+    }
+
+    public boolean isDebugShiny() {
+        return debugShiny;
+    }
+
+    public void setDebugShiny(boolean debugShiny) {
+        this.debugShiny = debugShiny;
     }
 }
